@@ -1,0 +1,633 @@
+{
+ "schema": "gapiring-v1",
+ "sample_rate": 24000,
+ "frame_rate": 12.5,
+ "samples_per_frame": 1920,
+ "latent_dim": 32,
+ "conditioning_dim": 1024,
+ "temperature": 0.3,
+ "lsd_steps": 1,
+ "eos_threshold": -4.0,
+ "min_frames_before_eos": 6,
+ "tokens_per_second_estimate": 3.0,
+ "gen_seconds_padding": 2.0,
+ "fade_in_samples": 120,
+ "tags": "role + manner symbols glued before the text",
+ "flow_lm_state_manifest": [
+  {
+   "index": 0,
+   "input_name": "state_0",
+   "output_name": "out_state_0",
+   "module": "transformer.layers.0.self_attn",
+   "key": "k",
+   "dtype": "float32",
+   "shape": [
+    1,
+    16,
+    0,
+    64
+   ],
+   "fill": "empty"
+  },
+  {
+   "index": 1,
+   "input_name": "state_1",
+   "output_name": "out_state_1",
+   "module": "transformer.layers.0.self_attn",
+   "key": "v",
+   "dtype": "float32",
+   "shape": [
+    1,
+    16,
+    0,
+    64
+   ],
+   "fill": "empty"
+  },
+  {
+   "index": 2,
+   "input_name": "state_2",
+   "output_name": "out_state_2",
+   "module": "transformer.layers.0.self_attn",
+   "key": "pos",
+   "dtype": "int64",
+   "shape": [
+    1
+   ],
+   "fill": "zeros"
+  },
+  {
+   "index": 3,
+   "input_name": "state_3",
+   "output_name": "out_state_3",
+   "module": "transformer.layers.1.self_attn",
+   "key": "k",
+   "dtype": "float32",
+   "shape": [
+    1,
+    16,
+    0,
+    64
+   ],
+   "fill": "empty"
+  },
+  {
+   "index": 4,
+   "input_name": "state_4",
+   "output_name": "out_state_4",
+   "module": "transformer.layers.1.self_attn",
+   "key": "v",
+   "dtype": "float32",
+   "shape": [
+    1,
+    16,
+    0,
+    64
+   ],
+   "fill": "empty"
+  },
+  {
+   "index": 5,
+   "input_name": "state_5",
+   "output_name": "out_state_5",
+   "module": "transformer.layers.1.self_attn",
+   "key": "pos",
+   "dtype": "int64",
+   "shape": [
+    1
+   ],
+   "fill": "zeros"
+  },
+  {
+   "index": 6,
+   "input_name": "state_6",
+   "output_name": "out_state_6",
+   "module": "transformer.layers.2.self_attn",
+   "key": "k",
+   "dtype": "float32",
+   "shape": [
+    1,
+    16,
+    0,
+    64
+   ],
+   "fill": "empty"
+  },
+  {
+   "index": 7,
+   "input_name": "state_7",
+   "output_name": "out_state_7",
+   "module": "transformer.layers.2.self_attn",
+   "key": "v",
+   "dtype": "float32",
+   "shape": [
+    1,
+    16,
+    0,
+    64
+   ],
+   "fill": "empty"
+  },
+  {
+   "index": 8,
+   "input_name": "state_8",
+   "output_name": "out_state_8",
+   "module": "transformer.layers.2.self_attn",
+   "key": "pos",
+   "dtype": "int64",
+   "shape": [
+    1
+   ],
+   "fill": "zeros"
+  },
+  {
+   "index": 9,
+   "input_name": "state_9",
+   "output_name": "out_state_9",
+   "module": "transformer.layers.3.self_attn",
+   "key": "k",
+   "dtype": "float32",
+   "shape": [
+    1,
+    16,
+    0,
+    64
+   ],
+   "fill": "empty"
+  },
+  {
+   "index": 10,
+   "input_name": "state_10",
+   "output_name": "out_state_10",
+   "module": "transformer.layers.3.self_attn",
+   "key": "v",
+   "dtype": "float32",
+   "shape": [
+    1,
+    16,
+    0,
+    64
+   ],
+   "fill": "empty"
+  },
+  {
+   "index": 11,
+   "input_name": "state_11",
+   "output_name": "out_state_11",
+   "module": "transformer.layers.3.self_attn",
+   "key": "pos",
+   "dtype": "int64",
+   "shape": [
+    1
+   ],
+   "fill": "zeros"
+  },
+  {
+   "index": 12,
+   "input_name": "state_12",
+   "output_name": "out_state_12",
+   "module": "transformer.layers.4.self_attn",
+   "key": "k",
+   "dtype": "float32",
+   "shape": [
+    1,
+    16,
+    0,
+    64
+   ],
+   "fill": "empty"
+  },
+  {
+   "index": 13,
+   "input_name": "state_13",
+   "output_name": "out_state_13",
+   "module": "transformer.layers.4.self_attn",
+   "key": "v",
+   "dtype": "float32",
+   "shape": [
+    1,
+    16,
+    0,
+    64
+   ],
+   "fill": "empty"
+  },
+  {
+   "index": 14,
+   "input_name": "state_14",
+   "output_name": "out_state_14",
+   "module": "transformer.layers.4.self_attn",
+   "key": "pos",
+   "dtype": "int64",
+   "shape": [
+    1
+   ],
+   "fill": "zeros"
+  },
+  {
+   "index": 15,
+   "input_name": "state_15",
+   "output_name": "out_state_15",
+   "module": "transformer.layers.5.self_attn",
+   "key": "k",
+   "dtype": "float32",
+   "shape": [
+    1,
+    16,
+    0,
+    64
+   ],
+   "fill": "empty"
+  },
+  {
+   "index": 16,
+   "input_name": "state_16",
+   "output_name": "out_state_16",
+   "module": "transformer.layers.5.self_attn",
+   "key": "v",
+   "dtype": "float32",
+   "shape": [
+    1,
+    16,
+    0,
+    64
+   ],
+   "fill": "empty"
+  },
+  {
+   "index": 17,
+   "input_name": "state_17",
+   "output_name": "out_state_17",
+   "module": "transformer.layers.5.self_attn",
+   "key": "pos",
+   "dtype": "int64",
+   "shape": [
+    1
+   ],
+   "fill": "zeros"
+  }
+ ],
+ "mimi_state_manifest": [
+  {
+   "index": 0,
+   "input_name": "state_0",
+   "output_name": "out_state_0",
+   "module": "decoder.model.0",
+   "key": "previous",
+   "dtype": "float32",
+   "shape": [
+    1,
+    512,
+    6
+   ],
+   "fill": "zeros"
+  },
+  {
+   "index": 1,
+   "input_name": "state_1",
+   "output_name": "out_state_1",
+   "module": "decoder.model.0",
+   "key": "first",
+   "dtype": "bool",
+   "shape": [
+    1
+   ],
+   "fill": "ones"
+  },
+  {
+   "index": 2,
+   "input_name": "state_2",
+   "output_name": "out_state_2",
+   "module": "decoder.model.2",
+   "key": "partial",
+   "dtype": "float32",
+   "shape": [
+    1,
+    256,
+    6
+   ],
+   "fill": "zeros"
+  },
+  {
+   "index": 3,
+   "input_name": "state_3",
+   "output_name": "out_state_3",
+   "module": "decoder.model.3.block.1",
+   "key": "previous",
+   "dtype": "float32",
+   "shape": [
+    1,
+    256,
+    2
+   ],
+   "fill": "zeros"
+  },
+  {
+   "index": 4,
+   "input_name": "state_4",
+   "output_name": "out_state_4",
+   "module": "decoder.model.3.block.1",
+   "key": "first",
+   "dtype": "bool",
+   "shape": [
+    1
+   ],
+   "fill": "ones"
+  },
+  {
+   "index": 5,
+   "input_name": "state_5",
+   "output_name": "out_state_5",
+   "module": "decoder.model.3.block.3",
+   "key": "previous",
+   "dtype": "float32",
+   "shape": [
+    1,
+    128,
+    0
+   ],
+   "fill": "zeros"
+  },
+  {
+   "index": 6,
+   "input_name": "state_6",
+   "output_name": "out_state_6",
+   "module": "decoder.model.3.block.3",
+   "key": "first",
+   "dtype": "bool",
+   "shape": [
+    1
+   ],
+   "fill": "ones"
+  },
+  {
+   "index": 7,
+   "input_name": "state_7",
+   "output_name": "out_state_7",
+   "module": "decoder.model.5",
+   "key": "partial",
+   "dtype": "float32",
+   "shape": [
+    1,
+    128,
+    5
+   ],
+   "fill": "zeros"
+  },
+  {
+   "index": 8,
+   "input_name": "state_8",
+   "output_name": "out_state_8",
+   "module": "decoder.model.6.block.1",
+   "key": "previous",
+   "dtype": "float32",
+   "shape": [
+    1,
+    128,
+    2
+   ],
+   "fill": "zeros"
+  },
+  {
+   "index": 9,
+   "input_name": "state_9",
+   "output_name": "out_state_9",
+   "module": "decoder.model.6.block.1",
+   "key": "first",
+   "dtype": "bool",
+   "shape": [
+    1
+   ],
+   "fill": "ones"
+  },
+  {
+   "index": 10,
+   "input_name": "state_10",
+   "output_name": "out_state_10",
+   "module": "decoder.model.6.block.3",
+   "key": "previous",
+   "dtype": "float32",
+   "shape": [
+    1,
+    64,
+    0
+   ],
+   "fill": "zeros"
+  },
+  {
+   "index": 11,
+   "input_name": "state_11",
+   "output_name": "out_state_11",
+   "module": "decoder.model.6.block.3",
+   "key": "first",
+   "dtype": "bool",
+   "shape": [
+    1
+   ],
+   "fill": "ones"
+  },
+  {
+   "index": 12,
+   "input_name": "state_12",
+   "output_name": "out_state_12",
+   "module": "decoder.model.8",
+   "key": "partial",
+   "dtype": "float32",
+   "shape": [
+    1,
+    64,
+    4
+   ],
+   "fill": "zeros"
+  },
+  {
+   "index": 13,
+   "input_name": "state_13",
+   "output_name": "out_state_13",
+   "module": "decoder.model.9.block.1",
+   "key": "previous",
+   "dtype": "float32",
+   "shape": [
+    1,
+    64,
+    2
+   ],
+   "fill": "zeros"
+  },
+  {
+   "index": 14,
+   "input_name": "state_14",
+   "output_name": "out_state_14",
+   "module": "decoder.model.9.block.1",
+   "key": "first",
+   "dtype": "bool",
+   "shape": [
+    1
+   ],
+   "fill": "ones"
+  },
+  {
+   "index": 15,
+   "input_name": "state_15",
+   "output_name": "out_state_15",
+   "module": "decoder.model.9.block.3",
+   "key": "previous",
+   "dtype": "float32",
+   "shape": [
+    1,
+    32,
+    0
+   ],
+   "fill": "zeros"
+  },
+  {
+   "index": 16,
+   "input_name": "state_16",
+   "output_name": "out_state_16",
+   "module": "decoder.model.9.block.3",
+   "key": "first",
+   "dtype": "bool",
+   "shape": [
+    1
+   ],
+   "fill": "ones"
+  },
+  {
+   "index": 17,
+   "input_name": "state_17",
+   "output_name": "out_state_17",
+   "module": "decoder.model.11",
+   "key": "previous",
+   "dtype": "float32",
+   "shape": [
+    1,
+    64,
+    2
+   ],
+   "fill": "zeros"
+  },
+  {
+   "index": 18,
+   "input_name": "state_18",
+   "output_name": "out_state_18",
+   "module": "decoder.model.11",
+   "key": "first",
+   "dtype": "bool",
+   "shape": [
+    1
+   ],
+   "fill": "ones"
+  },
+  {
+   "index": 19,
+   "input_name": "state_19",
+   "output_name": "out_state_19",
+   "module": "decoder_transformer.transformer.layers.0.self_attn",
+   "key": "k",
+   "dtype": "float32",
+   "shape": [
+    1,
+    8,
+    0,
+    64
+   ],
+   "fill": "empty"
+  },
+  {
+   "index": 20,
+   "input_name": "state_20",
+   "output_name": "out_state_20",
+   "module": "decoder_transformer.transformer.layers.0.self_attn",
+   "key": "v",
+   "dtype": "float32",
+   "shape": [
+    1,
+    8,
+    0,
+    64
+   ],
+   "fill": "empty"
+  },
+  {
+   "index": 21,
+   "input_name": "state_21",
+   "output_name": "out_state_21",
+   "module": "decoder_transformer.transformer.layers.0.self_attn",
+   "key": "pos",
+   "dtype": "int64",
+   "shape": [
+    1
+   ],
+   "fill": "zeros"
+  },
+  {
+   "index": 22,
+   "input_name": "state_22",
+   "output_name": "out_state_22",
+   "module": "decoder_transformer.transformer.layers.1.self_attn",
+   "key": "k",
+   "dtype": "float32",
+   "shape": [
+    1,
+    8,
+    0,
+    64
+   ],
+   "fill": "empty"
+  },
+  {
+   "index": 23,
+   "input_name": "state_23",
+   "output_name": "out_state_23",
+   "module": "decoder_transformer.transformer.layers.1.self_attn",
+   "key": "v",
+   "dtype": "float32",
+   "shape": [
+    1,
+    8,
+    0,
+    64
+   ],
+   "fill": "empty"
+  },
+  {
+   "index": 24,
+   "input_name": "state_24",
+   "output_name": "out_state_24",
+   "module": "decoder_transformer.transformer.layers.1.self_attn",
+   "key": "pos",
+   "dtype": "int64",
+   "shape": [
+    1
+   ],
+   "fill": "zeros"
+  },
+  {
+   "index": 25,
+   "input_name": "state_25",
+   "output_name": "out_state_25",
+   "module": "upsample.convtr",
+   "key": "partial",
+   "dtype": "float32",
+   "shape": [
+    1,
+    512,
+    16
+   ],
+   "fill": "zeros"
+  }
+ ],
+ "model": "Gapiring Edge v1",
+ "voice_shapes": {
+  "f1": [
+   1,
+   65,
+   1024
+  ],
+  "m1": [
+   1,
+   65,
+   1024
+  ]
+ }
+}
