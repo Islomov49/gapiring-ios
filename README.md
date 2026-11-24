@@ -12,20 +12,20 @@ https://huggingface.co/islomov/gapi-uz-gapiring-v1
 ## Installation
 
 In Xcode: **File → Add Package Dependencies…**, enter `https://github.com/Islomov49/gapiring-ios`, choose version
-`0.1.2` or later and add the `Gapiring` library to your app target.
+`0.1.6` or later and add the `Gapiring` library to your app target.
 
 In a `Package.swift`:
 
 ```swift
 dependencies: [
-    .package(url: "https://github.com/Islomov49/gapiring-ios.git", from: "0.1.2"),
+    .package(url: "https://github.com/Islomov49/gapiring-ios.git", from: "0.1.6"),
 ],
 targets: [
     .target(name: "MyApp", dependencies: [.product(name: "Gapiring", package: "gapiring-ios")]),
 ]
 ```
 
-ONNX Runtime comes as a 35 MB zip attached to the release; Swift Package Manager downloads it and checks its checksum.
+ONNX Runtime comes as a 35 MB zip attached to the 0.1.2 release; Swift Package Manager downloads it and checks its checksum.
 
 ## Usage
 
@@ -47,6 +47,9 @@ let audio = try tts.speak("Kechasi o'g'limning isitmasi chiqqanda shifokoringiz 
 - `stream` calls you with chunks as they are made (the first after about 80 ms of speech); return `false` to stop.
   `speak` returns the whole line. Both block the calling thread.
 - `seed:` (default 1) makes a line come out the same every time.
+- A text of any length is spoken piece by piece (`Speech.splitText`: sentences, up to 150 characters a piece) with
+  `pause:` seconds of silence between the pieces (default 0.25), and the apostrophes phone keyboards type (`ʻ`, `ʼ`,
+  `’` and others) are read as the plain `'`.
 - An instance speaks one line at a time: do not call `stream` or `speak` while `play` is speaking.
 - `Gapiring(modelDirectory:)` loads a model folder from disk instead of the one in the package.
 
@@ -66,8 +69,8 @@ Sounds inside the text: `[laugh]`, `[sigh]`, `[pause]`, `[breath]`. Write number
 
 ## Example app
 
-`Example/GapiringDemo` is a one-screen iPhone app: it plays the three lines above and measures the model's load time,
-the time to the first audio, the real-time factor and memory. Open `GapiringDemo.xcodeproj`, choose your team under
+`Example/GapiringDemo` is a one-screen iPhone app: it plays the three lines above and a longer text, and measures the
+model's load time, the time to the first audio, the real-time factor and memory. Open `GapiringDemo.xcodeproj`, choose your team under
 Signing & Capabilities and run it on a phone.
 
 ## Performance
@@ -92,8 +95,8 @@ state "fair":
 ## Tests
 
 `swift test` on a Mac runs everything, the model included: the random generator, the text front and the token ids on
-146 reference lines, ONNX Runtime's telemetry switch, and three spoken lines written to WAV files in the temporary
-folder.
+148 reference lines, the pieces of 75 reference texts, ONNX Runtime's telemetry switch, the lengths of the three
+lines above, and three lines and a long text spoken to WAV files in the temporary folder.
 
 ## ONNX Runtime
 

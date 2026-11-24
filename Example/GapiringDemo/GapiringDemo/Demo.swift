@@ -8,7 +8,8 @@ final class Demo: ObservableObject {
         let text, voice, role, manner: String
     }
 
-    /// The three example lines of the package's README (the first two are also in testSpeaks).
+    /// The three example lines of the package's README (the first two are also in testSpeaks), then a longer text, spoken
+    /// piece by piece: the README's lines joined, typed with U+02BB as an Uzbek phone keyboard does (testLongText).
     static let lines = [
         Line(text: "Assalomu alaykum! Namuna kompaniyasining virtual yordamchisiman, sizga qanday yordam bera olaman?",
              voice: "f1", role: "assistant", manner: "warm"),
@@ -16,6 +17,8 @@ final class Demo: ObservableObject {
              voice: "m1", role: "operator", manner: "calm"),
         Line(text: "Kechasi o'g'limning isitmasi chiqqanda shifokoringiz tez yetib kelib yordam berdi, klinika jamoasiga ming rahmat, baraka topinglar!",
              voice: "f1", role: "emotional", manner: "grateful"),
+        Line(text: "Assalomu alaykum! Namuna kompaniyasining virtual yordamchisiman, sizga qanday yordam bera olaman? Bugun obunani rasmiylashtirsangiz, birinchi oy uchun to\u{02BB}liq ellik foiz chegirma beriladi, imkoniyatni qo\u{02BB}ldan boy bermang. Kechasi o\u{02BB}g\u{02BB}limning isitmasi chiqqanda shifokoringiz tez yetib kelib yordam berdi, klinika jamoasiga ming rahmat, baraka topinglar! Oyimning tug\u{02BB}ilgan kuniga sovg\u{02BB}a buyurtma qilgandim, vaqtida olib kelmadinglar, rosa xafa bo\u{02BB}ldim to\u{02BB}g\u{02BB}risi.",
+             voice: "f1", role: "assistant", manner: "warm"),
     ]
     static let threads = 2
 

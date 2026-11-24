@@ -111,9 +111,10 @@ final class Engine {
     }
 
     /// Calls `onChunk` with 24 kHz mono float audio as it is made: the first chunk after one frame (80 ms), then every
-    /// `chunkFrames` frames. Return false from `onChunk` to stop the line.
+    /// `chunkFrames` frames. Return false from `onChunk` to stop the line. Returns false when `onChunk` stopped it.
+    @discardableResult
     func stream(_ text: String, voice v: String, role: String, manner: String, seed: UInt32, chunkFrames: Int = 3,
-                onChunk: ([Float]) -> Bool) throws {
+                onChunk: ([Float]) -> Bool) throws -> Bool {
         var rand = Mulberry32(seed)
         let std = try Engine.number(meta, "temperature").doubleValue.squareRoot()
         let ids = try tokens(text, role: role, manner: manner)
@@ -181,6 +182,7 @@ final class Engine {
             if first || pending.count >= chunkFrames { go = onChunk(try decode()) }
             n += 1
         }
-        if go && !pending.isEmpty { _ = onChunk(try decode()) }
+        if go && !pending.isEmpty { go = onChunk(try decode()) }
+        return go
     }
 }
