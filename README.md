@@ -70,12 +70,24 @@ Sounds inside the text: `[laugh]`, `[sigh]`, `[pause]`, `[breath]`. Write number
 the time to the first audio, the real-time factor and memory. Open `GapiringDemo.xcodeproj`, choose your team under
 Signing & Capabilities and run it on a phone.
 
+## Performance
+
+On an iPhone 14 Pro Max (A16, iOS 27.0.1), with 2 threads, in the example app's Release build, the phone's thermal
+state "fair":
+
+| | |
+|---|---|
+| Model load | 0.23–0.38 s |
+| First audio | 30–75 ms |
+| Real-time factor | 0.13–0.16: 6–8 s of speech in 0.85–1.2 s |
+| Memory | about 195 MB once loaded, 250 MB at the peak |
+
 ## Size and privacy
 
 - The package adds about 150 MB to an app: the model (113 MB) and ONNX Runtime with the Swift code (36 MB in the
   example app's binary).
 - It makes no network requests. ONNX Runtime's own usage telemetry, on by default in Microsoft's builds, is turned off
-  by the package before ONNX Runtime starts.
+  by the package before ONNX Runtime starts (network activity checked on a Mac and in the iOS simulator).
 
 ## Tests
 
