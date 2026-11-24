@@ -12,13 +12,13 @@ https://huggingface.co/islomov/gapi-uz-gapiring-v1
 ## Installation
 
 In Xcode: **File → Add Package Dependencies…**, enter `https://github.com/Islomov49/gapiring-ios`, choose version
-`0.1.6` or later and add the `Gapiring` library to your app target.
+`0.1.7` or later and add the `Gapiring` library to your app target.
 
 In a `Package.swift`:
 
 ```swift
 dependencies: [
-    .package(url: "https://github.com/Islomov49/gapiring-ios.git", from: "0.1.6"),
+    .package(url: "https://github.com/Islomov49/gapiring-ios.git", from: "0.1.7"),
 ],
 targets: [
     .target(name: "MyApp", dependencies: [.product(name: "Gapiring", package: "gapiring-ios")]),
@@ -63,7 +63,12 @@ Each role speaks in its own manners (`Speech.roleManners`):
 |---|---|
 | `operator` | neutral, warm, cheerful, empathetic, calm, dictation, persuasive, brisk |
 | `assistant` | neutral, warm, cheerful, empathetic, calm, dictation, soothing |
+| `assistant_formal` | neutral, warm, cheerful, empathetic, calm, dictation, soothing |
 | `emotional` | angry, upset, irritated, worried, tired, sceptical, confused, hurried, joking, grateful, curious, friendly, calm, elderly |
+
+`assistant` is a lively helper: it speaks with a person's intonation and now and then hesitates a little, as people do
+in live speech. `assistant_formal` is the same helper in an even, measured delivery: choose it for announcements, voice
+menus, instructions, long texts, and wherever every take should sound the same.
 
 Sounds inside the text: `[laugh]`, `[sigh]`, `[pause]`, `[breath]`. Write numbers as words.
 
@@ -95,8 +100,9 @@ state "fair":
 ## Tests
 
 `swift test` on a Mac runs everything, the model included: the random generator, the text front and the token ids on
-148 reference lines, the pieces of 75 reference texts, ONNX Runtime's telemetry switch, the lengths of the three
-lines above, and three lines and a long text spoken to WAV files in the temporary folder.
+176 reference lines, the pieces of 75 reference texts, ONNX Runtime's telemetry switch, the lengths of the three
+lines above, and three lines, one line in `assistant` and `assistant_formal`, and a long text spoken to WAV files in the
+temporary folder.
 
 ## ONNX Runtime
 

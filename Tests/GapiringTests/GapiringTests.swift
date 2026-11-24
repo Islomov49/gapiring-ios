@@ -47,8 +47,8 @@ final class GapiringTests: XCTestCase {
         for w in want { XCTAssertEqual(r.next(), w, accuracy: 0) }
     }
 
-    /// The text front and the token ids equal the Python runtime's on every reference case (148, the apostrophe
-    /// variants among them).
+    /// The text front and the token ids equal the Python runtime's on every reference case (176: the apostrophe
+    /// variants and the role assistant_formal among them).
     func testTextAndTokens() throws {
         let tokenizer = try Tokenizer(json: Data(contentsOf: modelFile("tokenizer.json")))
         var cases = 0, badText = 0, badIds = 0
@@ -60,7 +60,7 @@ final class GapiringTests: XCTestCase {
             if tokenizer.encode(full) != ids { badIds += 1; print("IDS", full.prefix(60)) }
         }
         print("cases \(cases), text mismatches \(badText), id mismatches \(badIds)")
-        XCTAssertEqual(cases, 148)
+        XCTAssertEqual(cases, 176)
         XCTAssertEqual(badText, 0)
         XCTAssertEqual(badIds, 0)
     }
@@ -100,6 +100,28 @@ final class GapiringTests: XCTestCase {
         let counts = try lines.map { try tts.speak($0.0, voice: $0.1, role: $0.2, manner: $0.3, seed: 3).count }
         print("README lines:", counts.map { String(format: "%.2f s", Double($0) / 24000) })
         XCTAssertEqual(counts, [147_840, 184_320, 192_000])
+    }
+
+    /// assistant_formal reads the same tokens as assistant but its own role symbol (U+2463), and speaks the line
+    /// differently at the same seed. Both WAVs go to the temporary folder.
+    func testFormalRole() throws {
+        let text = "Assalomu alaykum! Namuna kompaniyasining virtual yordamchisiman, sizga qanday yordam bera olaman?"
+        let tts = try Gapiring()
+        let lively = try tts.tokens(text, role: "assistant", manner: "warm")
+        let formal = try tts.tokens(text, role: "assistant_formal", manner: "warm")
+        XCTAssertEqual(lively.count, formal.count)
+        XCTAssertEqual(zip(lively, formal).filter { $0 != $1 }.count, 1, "only the role token differs")
+        for manner in Speech.roleManners["assistant"]! { XCTAssertNoThrow(try Speech.tags(role: "assistant_formal", manner: manner)) }
+        XCTAssertThrowsError(try Speech.tags(role: "assistant_formal", manner: "persuasive"))
+        var audio: [String: [Float]] = [:]
+        for role in ["assistant", "assistant_formal"] {
+            let a = try tts.speak(text, voice: "f1", role: role, manner: "warm", seed: 3)
+            print(String(format: "%@: %.2f s", role, Double(a.count) / 24000))
+            XCTAssertTrue(a.count > 24000 && a.contains { abs($0) > 0.05 }, "\(role) is silent")
+            try wav(a, "gapiring_\(role).wav")
+            audio[role] = a
+        }
+        XCTAssertNotEqual(audio["assistant"], audio["assistant_formal"])
     }
 
     /// A long text is spoken to the end, piece by piece: exactly each piece spoken on its own with the same seed, and

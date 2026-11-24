@@ -2,7 +2,8 @@ import Foundation
 
 /// Roles and manners by name, and the text front: punctuation, sound tags, the role and manner in front of the text.
 public enum Speech {
-    public static let roles: [String: String] = ["operator": "\u{2460}", "assistant": "\u{2462}", "emotional": "\u{2461}"]
+    public static let roles: [String: String] = ["operator": "\u{2460}", "assistant": "\u{2462}", "assistant_formal": "\u{2463}",
+                                                 "emotional": "\u{2461}"]
     static let manners: [String: String] = [
         "calm": "\u{2464}", "neutral": "\u{2472}", "warm": "\u{2473}", "cheerful": "\u{2474}", "empathetic": "\u{2475}",
         "dictation": "\u{2476}", "persuasive": "\u{2477}", "brisk": "\u{2478}", "soothing": "\u{2479}", "angry": "\u{246c}",
@@ -14,6 +15,7 @@ public enum Speech {
     public static let roleManners: [String: [String]] = [
         "operator": ["neutral", "warm", "cheerful", "empathetic", "calm", "dictation", "persuasive", "brisk"],
         "assistant": ["neutral", "warm", "cheerful", "empathetic", "calm", "dictation", "soothing"],
+        "assistant_formal": ["neutral", "warm", "cheerful", "empathetic", "calm", "dictation", "soothing"],
         "emotional": ["angry", "upset", "irritated", "worried", "tired", "sceptical", "confused", "hurried", "joking",
                       "grateful", "curious", "friendly", "calm", "elderly"],
     ]

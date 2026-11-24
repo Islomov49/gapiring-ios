@@ -9,7 +9,7 @@ import Foundation
 /// `play` returns at once and speaks on a background queue; `stream` and `speak` run on the calling thread. A text of
 /// any length is spoken piece by piece (`Speech.splitText`) with `pause` seconds of silence between the pieces.
 public final class Gapiring {
-    public static let version = "0.1.6"
+    public static let version = "0.1.7"
     public let sampleRate: Int
 
     private let engine: Engine
