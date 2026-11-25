@@ -74,8 +74,8 @@ book, every other role is neutral.
 
 `assistant` is a lively helper with a person's intonation; since 0.2 it speaks fluently, and `hesitant: true` gives it
 the little hesitations of live speech it had in 0.1. `assistant_formal` is the same helper in an even, measured
-delivery: choose it for announcements, voice menus, instructions, long texts, and wherever every take should sound the
-same. `narrator` reads longer texts: a book, an article, the news, a tale.
+delivery: choose it for announcements, voice menus, instructions, long texts, and wherever the delivery should stay
+even from line to line. `narrator` reads longer texts: a book, an article, the news, a tale.
 
 One mark at a time may be added to a line (`stream`, `speak`, `play`, `tokens`, `Speech.tags`); a combination outside
 this table, or two marks at once, throws before any audio is made:
@@ -130,8 +130,8 @@ the two assistant roles spoken to WAV files in the temporary folder.
 
 ## Model
 
-The model folder is `Sources/Gapiring/Model`. Another take of it, or of its graphs alone, under the same file names, goes
-in with one command; then run the tests:
+The model folder is `Sources/Gapiring/Model`. A new version of it, or of its graphs alone, under the same file names,
+goes in with one command; then run the tests:
 
 ```sh
 python3 scripts/replace_model.py gapiring-edge-v2-model.zip --sha256 <hash>
