@@ -106,18 +106,19 @@ final class Engine {
         return states
     }
 
-    func tokens(_ text: String, role: String, manner: String) throws -> [Int] {
-        tokenizer.encode(try Speech.full(text, role: role, manner: manner))
+    /// The token ids of one piece with its symbols in front (`Speech.tags`).
+    func tokens(_ text: String, tags: String) -> [Int] {
+        tokenizer.encode(Speech.full(text, tags: tags))
     }
 
     /// Calls `onChunk` with 24 kHz mono float audio as it is made: the first chunk after one frame (80 ms), then every
     /// `chunkFrames` frames. Return false from `onChunk` to stop the line. Returns false when `onChunk` stopped it.
     @discardableResult
-    func stream(_ text: String, voice v: String, role: String, manner: String, seed: UInt32, chunkFrames: Int = 3,
+    func stream(_ text: String, voice v: String, tags: String, seed: UInt32, chunkFrames: Int = 3,
                 onChunk: ([Float]) -> Bool) throws -> Bool {
         var rand = Mulberry32(seed)
         let std = try Engine.number(meta, "temperature").doubleValue.squareRoot()
-        let ids = try tokens(text, role: role, manner: manner)
+        let ids = tokens(text, tags: tags)
         let perSecond = try Engine.number(meta, "tokens_per_second_estimate").doubleValue
         let padding = try Engine.number(meta, "gen_seconds_padding").doubleValue
         let maxGen = Int((Double(ids.count) / perSecond + padding) * (try Engine.number(meta, "frame_rate").doubleValue))

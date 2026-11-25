@@ -1,13 +1,11 @@
 import XCTest
 @testable import Gapiring
 
-/// Reference data sits in Tests/GapiringTests/Reference: tok_cases_public.jsonl and split_cases_public.jsonl, the files
-/// every Gapiring runtime checks itself against (made by the Python runtime).
+/// Reference data sits in Tests/GapiringTests/Reference: public_cases.jsonl, split_cases.jsonl and speak_lines.jsonl,
+/// the files every Gapiring runtime checks itself against (text-contract v2, made by the Python runtime).
 final class GapiringTests: XCTestCase {
     private func modelFile(_ name: String) throws -> URL {
-        let dir = try XCTUnwrap(Bundle(for: Gapiring.self).url(forResource: "Model", withExtension: nil)
-            ?? Bundle.allBundles.compactMap { $0.url(forResource: "Model", withExtension: nil) }.first, "Model folder not found in the bundles")
-        return dir.appendingPathComponent(name)
+        try XCTUnwrap(Gapiring.packagedModel, "the Model folder is not in the package's resources").appendingPathComponent(name)
     }
 
     private func reference(_ name: String) throws -> [[String: Any]] {
@@ -32,9 +30,11 @@ final class GapiringTests: XCTestCase {
         return out
     }
 
+    private static let greeting = "Assalomu alaykum! Namuna kompaniyasining virtual yordamchisiman, sizga qanday yordam bera olaman?"
+
     /// The README's lines joined (more than 400 code points), typed with U+02BB as an Uzbek phone keyboard does.
     static let longText = [
-        "Assalomu alaykum! Namuna kompaniyasining virtual yordamchisiman, sizga qanday yordam bera olaman?",
+        greeting,
         "Bugun obunani rasmiylashtirsangiz, birinchi oy uchun to'liq ellik foiz chegirma beriladi, imkoniyatni qo'ldan boy bermang.",
         "Kechasi o'g'limning isitmasi chiqqanda shifokoringiz tez yetib kelib yordam berdi, klinika jamoasiga ming rahmat, baraka topinglar!",
         "Oyimning tug'ilgan kuniga sovg'a buyurtma qilgandim, vaqtida olib kelmadinglar, rosa xafa bo'ldim to'g'risi.",
@@ -47,39 +47,133 @@ final class GapiringTests: XCTestCase {
         for w in want { XCTAssertEqual(r.next(), w, accuracy: 0) }
     }
 
-    /// The text front and the token ids equal the Python runtime's on every reference case (176: the apostrophe
-    /// variants and the role assistant_formal among them).
+    /// Every reference case (368): the symbols from role, manner and mark equal `tags`, the text front equals `text`, the
+    /// tokenizer gives `ids` for `full`.
     func testTextAndTokens() throws {
         let tokenizer = try Tokenizer(json: Data(contentsOf: modelFile("tokenizer.json")))
-        var cases = 0, badText = 0, badIds = 0
-        for r in try reference("tok_cases_public") {
+        var cases = 0, badTags = 0, badText = 0, badFull = 0, badIds = 0
+        for r in try reference("public_cases") {
             cases += 1
-            let raw = r["raw"] as! String, tags = r["tags"] as! String, text = r["text"] as! String
+            let raw = r["raw"] as! String, role = r["role"] as! String, manner = r["manner"] as? String
+            let want = r["tags"] as! String, text = r["text"] as! String
             let full = r["full"] as! String, ids = (r["ids"] as! [NSNumber]).map { $0.intValue }
-            if Array(Speech.pocketText(raw, tags: tags).unicodeScalars) != Array(text.unicodeScalars) { badText += 1; print("TEXT", raw) }
+            let tags = try Speech.tags(role: role, manner: manner, pace: r["pace"] as? String,
+                                       serious: r["serious"] as? Bool ?? false, hesitant: r["hesitant"] as? Bool ?? false)
+            if Array(tags.unicodeScalars) != Array(want.unicodeScalars) { badTags += 1; print("TAGS", role, manner ?? "-", r) }
+            if Array(Speech.pocketText(raw, tags: want).unicodeScalars) != Array(text.unicodeScalars) { badText += 1; print("TEXT", raw) }
+            if Array(Speech.full(raw, tags: want).unicodeScalars) != Array(full.unicodeScalars) { badFull += 1; print("FULL", raw) }
             if tokenizer.encode(full) != ids { badIds += 1; print("IDS", full.prefix(60)) }
         }
-        print("cases \(cases), text mismatches \(badText), id mismatches \(badIds)")
-        XCTAssertEqual(cases, 176)
+        print("cases \(cases), tags mismatches \(badTags), text mismatches \(badText), full mismatches \(badFull), id mismatches \(badIds)")
+        XCTAssertEqual(cases, 368)
+        XCTAssertEqual(badTags, 0)
         XCTAssertEqual(badText, 0)
+        XCTAssertEqual(badFull, 0)
         XCTAssertEqual(badIds, 0)
     }
 
-    /// splitText cuts every reference text into the pieces of the other runtimes, scalar by scalar (75 cases).
+    /// splitText cuts every reference text into the pieces of the other runtimes, scalar by scalar (165 cases, the
+    /// narrator's with limit 280 and hard 340).
     func testSplitText() throws {
-        var cases = 0, bad = 0
-        for r in try reference("split_cases_public") {
+        var cases = 0, bad = 0, narrator = 0
+        for r in try reference("split_cases") {
             cases += 1
             let text = r["text"] as! String, want = r["pieces"] as! [String]
-            let got = Speech.splitText(text)
+            let limit = (r["limit"] as? NSNumber)?.intValue ?? 150, hard = (r["hard"] as? NSNumber)?.intValue ?? 240
+            let got = Speech.splitText(text, limit: limit, hard: hard)
+            if r["limit"] != nil {
+                narrator += 1
+                XCTAssertEqual(Speech.pieces(text, role: "narrator"), got, "the narrator's pieces are 280 / 340")
+            }
             if got.map({ Array($0.unicodeScalars) }) != want.map({ Array($0.unicodeScalars) }) {
                 bad += 1
                 print("SPLIT", text.prefix(60), "got", got.count, "want", want.count)
             }
         }
-        print("split cases \(cases), mismatches \(bad)")
-        XCTAssertEqual(cases, 75)
+        print("split cases \(cases) (\(narrator) with the narrator's size), mismatches \(bad)")
+        XCTAssertEqual(cases, 165)
         XCTAssertEqual(bad, 0)
+    }
+
+    /// The manner defaults to book for the narrator and to neutral for the others; combinations outside text-contract v2
+    /// throw, and `stream` throws before any audio.
+    func testCombinations() throws {
+        XCTAssertEqual(try Speech.tags(role: "narrator"), "\u{247A}\u{247C}")
+        XCTAssertEqual(try Speech.tags(role: "operator"), "\u{2460}\u{2472}")
+        XCTAssertEqual(try Speech.tags(role: "assistant"), "\u{2462}\u{2472}")
+        XCTAssertEqual(try Speech.tags(role: "narrator", manner: "news", pace: "fast"), "\u{247A}\u{247E}\u{2481}")
+        XCTAssertEqual(try Speech.tags(role: "narrator", manner: "article", serious: true), "\u{247A}\u{247D}\u{247B}")
+        XCTAssertEqual(try Speech.tags(role: "assistant", manner: "warm", hesitant: true), "\u{2462}\u{2473}\u{2482}")
+        let wrong: [(String, String?, String?, Bool, Bool)] = [
+            ("narrator", "warm", nil, false, false),              // a manner the narrator does not have
+            ("emotional", "angry", "slow", false, false),         // pace with emotional
+            ("assistant_formal", "warm", nil, false, true),       // hesitant with assistant_formal
+            ("assistant", "warm", "slow", false, true),           // two marks at once
+            ("narrator", "news", "fast", true, false),            // two marks at once
+            ("narrator", "news", "slow", false, false),           // slow only with article
+            ("narrator", "article", "fast", false, false),        // fast only with news
+            ("narrator", "book", nil, true, false),               // serious only with article or news
+            ("operator", "neutral", nil, true, false),            // serious is a manner for the other roles
+            ("operator", "dictation", "fast", false, false),      // not in paceManners
+            ("assistant", "neutral", "medium", false, false),     // slow or fast
+            ("assistant", "serious", nil, false, true),           // hesitant without serious
+            ("teacher", nil, nil, false, false),                  // no such role
+        ]
+        for (role, manner, pace, serious, hesitant) in wrong {
+            XCTAssertThrowsError(try Speech.tags(role: role, manner: manner, pace: pace, serious: serious, hesitant: hesitant),
+                                 "\(role)/\(manner ?? "-") pace \(pace ?? "-") serious \(serious) hesitant \(hesitant)")
+        }
+        let tts = try Gapiring()
+        var chunks = 0
+        XCTAssertThrowsError(try tts.stream("Salom.", role: "narrator", manner: "warm") { _ in chunks += 1; return true })
+        XCTAssertThrowsError(try tts.speak("Salom.", role: "assistant", manner: "warm", pace: "slow", hesitant: true))
+        XCTAssertEqual(chunks, 0)
+    }
+
+    /// Code written for 0.1.7 runs on 0.2 as it is: the 36 role and manner pairs keep their symbols and token ids in front
+    /// and speak, and the call forms of 0.1.7 compile.
+    func testCode01RunsUnchanged() throws {
+        let roles01 = ["operator": "\u{2460}", "assistant": "\u{2462}", "assistant_formal": "\u{2463}", "emotional": "\u{2461}"]
+        let manners01: [String: String] = [
+            "calm": "\u{2464}", "neutral": "\u{2472}", "warm": "\u{2473}", "cheerful": "\u{2474}", "empathetic": "\u{2475}",
+            "dictation": "\u{2476}", "persuasive": "\u{2477}", "brisk": "\u{2478}", "soothing": "\u{2479}", "angry": "\u{246c}",
+            "upset": "\u{246e}", "irritated": "\u{246b}", "worried": "\u{246d}", "tired": "\u{2470}", "sceptical": "\u{246f}",
+            "confused": "\u{2469}", "hurried": "\u{246a}", "joking": "\u{2466}", "grateful": "\u{2467}", "curious": "\u{2468}",
+            "friendly": "\u{2465}", "elderly": "\u{2471}",
+        ]
+        let pairs01: [(String, [String])] = [
+            ("operator", ["neutral", "warm", "cheerful", "empathetic", "calm", "dictation", "persuasive", "brisk"]),
+            ("assistant", ["neutral", "warm", "cheerful", "empathetic", "calm", "dictation", "soothing"]),
+            ("assistant_formal", ["neutral", "warm", "cheerful", "empathetic", "calm", "dictation", "soothing"]),
+            ("emotional", ["angry", "upset", "irritated", "worried", "tired", "sceptical", "confused", "hurried", "joking",
+                           "grateful", "curious", "friendly", "calm", "elderly"]),
+        ]
+        let tokenizer = try Tokenizer(json: Data(contentsOf: modelFile("tokenizer.json")))
+        let tts = try Gapiring()
+        var pairs = 0
+        for (role, manners) in pairs01 {
+            for manner in manners {
+                pairs += 1
+                let want = roles01[role]! + manners01[manner]!
+                XCTAssertEqual(try Speech.tags(role: role, manner: manner), want, "\(role)/\(manner)")
+                let ids = try tts.tokens("Salom, qalaysiz?", role: role, manner: manner)
+                XCTAssertEqual(Array(ids.prefix(2)), tokenizer.encode(want), "\(role)/\(manner): the ids in front")
+                let audio = try tts.speak("Salom, qalaysiz?", voice: "f1", role: role, manner: manner, seed: 3)
+                XCTAssertTrue(audio.count > 12000 && audio.contains { abs($0) > 0.05 }, "\(role)/\(manner) is silent")
+            }
+        }
+        XCTAssertEqual(pairs, 36)
+        // The call forms of 0.1.7, as an app wrote them.
+        _ = try tts.speak("Salom.")
+        _ = try tts.speak("Salom.", voice: "m1", role: "operator")
+        _ = try tts.tokens("Salom.", role: "emotional", manner: "joking")
+        _ = try Speech.full("Salom.", role: "assistant", manner: "warm")
+        try tts.stream("Salom.", voice: "f1", role: "assistant", manner: "warm", seed: 2, pause: 0.25) { _ in false }
+        if pairs < 0 {   // compiled, never run: play would use the audio output
+            tts.play("Salom.", voice: "f1", role: "assistant", manner: "warm", seed: 1, pause: 0.25) { _ in }
+            tts.play("Salom.")
+            tts.stop()
+        }
     }
 
     /// ONNX Runtime's telemetry is off: the bindings set ORT_DISABLE_TELEMETRY=1 before ONNX Runtime starts (checked by
@@ -89,23 +183,52 @@ final class GapiringTests: XCTestCase {
         XCTAssertEqual(getenv("ORT_DISABLE_TELEMETRY").map { String(cString: $0) }, "1")
     }
 
-    /// The three README lines at seed 3 keep their lengths: 6.16, 7.68 and 8.00 s (77, 96 and 100 frames of 80 ms).
-    func testReadmeLines() throws {
+    /// The lines of speak_lines.jsonl at seed 3 with their settings, and a slowly dictated number: not silent, ended by
+    /// the model and not by the length limit, slow longer than normal longer than fast. The durations are printed next
+    /// to the JavaScript and Kotlin runtimes'; the WAV files go to the temporary folder.
+    func testSpeakLines() throws {
+        var lines = try reference("speak_lines")
+        lines.append(["id": "dictation_number", "voice": "f1", "role": "assistant", "manner": "dictation",
+                      "text": "Aloqa raqamimizni yozib oling: to'qqiz, nol, uch, besh, bir, to'rt, olti, sakkiz, yetti."])
+        let bundle = try XCTUnwrap(JSONSerialization.jsonObject(with: Data(contentsOf: modelFile("bundle.json"))) as? [String: Any])
+        let perSecond = (bundle["tokens_per_second_estimate"] as! NSNumber).doubleValue
+        let padding = (bundle["gen_seconds_padding"] as! NSNumber).doubleValue
+        let frameRate = (bundle["frame_rate"] as! NSNumber).doubleValue
         let tts = try Gapiring()
-        let lines: [(String, String, String, String)] = [
-            ("Assalomu alaykum! Namuna kompaniyasining virtual yordamchisiman, sizga qanday yordam bera olaman?", "f1", "assistant", "warm"),
-            ("Bugun obunani rasmiylashtirsangiz, birinchi oy uchun to'liq ellik foiz chegirma beriladi, imkoniyatni qo'ldan boy bermang.", "m1", "operator", "calm"),
-            ("Kechasi o'g'limning isitmasi chiqqanda shifokoringiz tez yetib kelib yordam berdi, klinika jamoasiga ming rahmat, baraka topinglar!", "f1", "emotional", "grateful"),
-        ]
-        let counts = try lines.map { try tts.speak($0.0, voice: $0.1, role: $0.2, manner: $0.3, seed: 3).count }
-        print("README lines:", counts.map { String(format: "%.2f s", Double($0) / 24000) })
-        XCTAssertEqual(counts, [147_840, 184_320, 192_000])
+        var seconds: [String: Double] = [:], greetings: [String: [Float]] = [:]
+        for line in lines {
+            let id = line["id"] as! String, text = line["text"] as! String, role = line["role"] as! String
+            let manner = line["manner"] as? String, pace = line["pace"] as? String
+            let serious = line["serious"] as? Bool ?? false, hesitant = line["hesitant"] as? Bool ?? false
+            let t = Date()
+            let audio = try tts.speak(text, voice: line["voice"] as! String, role: role, manner: manner, seed: 3, pace: pace,
+                                      serious: serious, hesitant: hesitant)
+            let s = Double(audio.count) / 24000
+            seconds[id] = s
+            if id.hasPrefix("greeting") { greetings[id] = audio }
+            let js = (line["seconds_javascript"] as? NSNumber)?.doubleValue, kt = (line["seconds_kotlin"] as? NSNumber)?.doubleValue
+            print(String(format: "SPEAK %@: swift %.2f s, javascript %@, kotlin %@, rtf %.3f", id, s,
+                         js.map { String(format: "%.2f s", $0) } ?? "-", kt.map { String(format: "%.2f s", $0) } ?? "-",
+                         Date().timeIntervalSince(t) / s))
+            XCTAssertTrue(audio.contains { abs($0) > 0.05 }, "\(id) is silent")
+            let pieces = Speech.pieces(text, role: role)
+            if pieces.count == 1 {   // the model closed the line: it stopped before the length limit
+                let ids = try tts.tokens(text, role: role, manner: manner, pace: pace, serious: serious, hesitant: hesitant)
+                let limit = Int((Double(ids.count) / perSecond + padding) * frameRate) * Int(24000 / frameRate)   // frames of 1920 samples
+                XCTAssertLessThan(audio.count, limit, "\(id) was cut at the length limit")
+            }
+            try wav(audio, "gapiring_\(id).wav")
+        }
+        XCTAssertNotEqual(greetings["greeting"], greetings["greeting_hesitant"], "hesitant changes the delivery")
+        XCTAssertGreaterThan(seconds["pace_slow"]!, seconds["pace_normal"]!)
+        XCTAssertGreaterThan(seconds["pace_normal"]!, seconds["pace_fast"]!)
+        XCTAssertTrue((16...20).contains(seconds["dictation_number"]!), "the dictated number is \(seconds["dictation_number"]!) s")
     }
 
     /// assistant_formal reads the same tokens as assistant but its own role symbol (U+2463), and speaks the line
     /// differently at the same seed. Both WAVs go to the temporary folder.
     func testFormalRole() throws {
-        let text = "Assalomu alaykum! Namuna kompaniyasining virtual yordamchisiman, sizga qanday yordam bera olaman?"
+        let text = GapiringTests.greeting
         let tts = try Gapiring()
         let lively = try tts.tokens(text, role: "assistant", manner: "warm")
         let formal = try tts.tokens(text, role: "assistant_formal", manner: "warm")
@@ -163,7 +286,7 @@ final class GapiringTests: XCTestCase {
         let tts = try Gapiring()
         print("load \(Int(Date().timeIntervalSince(t0) * 1000)) ms")
         let lines: [(String, String, String, String)] = [
-            ("Assalomu alaykum! Namuna kompaniyasining virtual yordamchisiman, sizga qanday yordam bera olaman?", "f1", "assistant", "warm"),
+            (GapiringTests.greeting, "f1", "assistant", "warm"),
             ("Bugun obunani rasmiylashtirsangiz, birinchi oy uchun to'liq ellik foiz chegirma beriladi, imkoniyatni qo'ldan boy bermang.", "m1", "operator", "calm"),
             ("Oyimning tug'ilgan kuniga sovg'a buyurtma qilgandim, [sigh] vaqtida olib kelmadinglar, rosa xafa bo'ldim to'g'risi.", "f1", "emotional", "upset"),
         ]

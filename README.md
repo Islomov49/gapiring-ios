@@ -1,6 +1,6 @@
 # Gapiring for iOS and macOS
 
-Uzbek text-to-speech on the device. The Gapiring Edge model ships inside the package: no network, no account, no key.
+Uzbek text-to-speech on the device. The Gapiring Edge v2 model ships inside the package: no network, no account, no key.
 
 The model, the other platforms (Python, JavaScript, Android) and audio examples:
 https://huggingface.co/islomov/gapi-uz-gapiring-v1
@@ -12,13 +12,13 @@ https://huggingface.co/islomov/gapi-uz-gapiring-v1
 ## Installation
 
 In Xcode: **File → Add Package Dependencies…**, enter `https://github.com/Islomov49/gapiring-ios`, choose version
-`0.1.7` or later and add the `Gapiring` library to your app target.
+`0.2.0` or later and add the `Gapiring` library to your app target.
 
 In a `Package.swift`:
 
 ```swift
 dependencies: [
-    .package(url: "https://github.com/Islomov49/gapiring-ios.git", from: "0.1.7"),
+    .package(url: "https://github.com/Islomov49/gapiring-ios.git", from: "0.2.0"),
 ],
 targets: [
     .target(name: "MyApp", dependencies: [.product(name: "Gapiring", package: "gapiring-ios")]),
@@ -39,6 +39,8 @@ try tts.stream("Bugun obunani rasmiylashtirsangiz, birinchi oy uchun to'liq elli
     return true                                                 // false stops the line
 }
 let audio = try tts.speak("Kechasi o'g'limning isitmasi chiqqanda shifokoringiz tez yetib kelib yordam berdi, klinika jamoasiga ming rahmat, baraka topinglar!", voice: "f1", role: "emotional", manner: "grateful")
+
+let news = try tts.speak("Bugun erta tongda ikkita qishloqni bog'lovchi yangi ko'prik foydalanishga topshirildi.", voice: "m1", role: "narrator", manner: "news", pace: "fast")
 ```
 
 - `Gapiring(threads: 2)` loads the model. Create it once, off the main thread, and keep it.
@@ -47,9 +49,11 @@ let audio = try tts.speak("Kechasi o'g'limning isitmasi chiqqanda shifokoringiz 
 - `stream` calls you with chunks as they are made (the first after about 80 ms of speech); return `false` to stop.
   `speak` returns the whole line. Both block the calling thread.
 - `seed:` (default 1) makes a line come out the same every time.
-- A text of any length is spoken piece by piece (`Speech.splitText`: sentences, up to 150 characters a piece) with
-  `pause:` seconds of silence between the pieces (default 0.25), and the apostrophes phone keyboards type (`ʻ`, `ʼ`,
-  `’` and others) are read as the plain `'`.
+- A text of any length is spoken piece by piece (`Speech.splitText`: sentences, up to 150 characters a piece, 280 for
+  the narrator) with `pause:` seconds of silence between the pieces (default 0.25), and the apostrophes phone keyboards
+  type (`ʻ`, `ʼ`, `’` and others) are read as the plain `'`.
+- English words, brands and abbreviations are read as they are written (eSIM, Google Lens, check-in): there is no
+  dictionary in between.
 - An instance speaks one line at a time: do not call `stream` or `speak` while `play` is speaking.
 - `Gapiring(modelDirectory:)` loads a model folder from disk instead of the one in the package.
 
@@ -57,20 +61,39 @@ let audio = try tts.speak("Kechasi o'g'limning isitmasi chiqqanda shifokoringiz 
 
 Voices: `f1`, `m1`.
 
-Each role speaks in its own manners (`Speech.roleManners`):
+Each role speaks in its own manners (`Speech.roleManners`). The manner may be left out: the narrator then reads a
+book, every other role is neutral.
 
 | Role | Manners |
 |---|---|
-| `operator` | neutral, warm, cheerful, empathetic, calm, dictation, persuasive, brisk |
-| `assistant` | neutral, warm, cheerful, empathetic, calm, dictation, soothing |
-| `assistant_formal` | neutral, warm, cheerful, empathetic, calm, dictation, soothing |
+| `operator` | neutral, warm, cheerful, empathetic, calm, dictation, persuasive, brisk, serious |
+| `assistant` | neutral, warm, cheerful, empathetic, calm, dictation, soothing, serious |
+| `assistant_formal` | neutral, warm, cheerful, empathetic, calm, dictation, soothing, serious |
+| `narrator` | book, article, news, tale (the genre) |
 | `emotional` | angry, upset, irritated, worried, tired, sceptical, confused, hurried, joking, grateful, curious, friendly, calm, elderly |
 
-`assistant` is a lively helper: it speaks with a person's intonation and now and then hesitates a little, as people do
-in live speech. `assistant_formal` is the same helper in an even, measured delivery: choose it for announcements, voice
-menus, instructions, long texts, and wherever every take should sound the same.
+`assistant` is a lively helper with a person's intonation; since 0.2 it speaks fluently, and `hesitant: true` gives it
+the little hesitations of live speech it had in 0.1. `assistant_formal` is the same helper in an even, measured
+delivery: choose it for announcements, voice menus, instructions, long texts, and wherever every take should sound the
+same. `narrator` reads longer texts: a book, an article, the news, a tale.
+
+One mark at a time may be added to a line (`stream`, `speak`, `play`, `tokens`, `Speech.tags`); a combination outside
+this table, or two marks at once, throws before any audio is made:
+
+| Mark | With |
+|---|---|
+| `pace: "slow"` or `"fast"` | `operator` with neutral, warm, cheerful, calm, persuasive; `assistant` and `assistant_formal` with neutral, warm, cheerful, calm; `narrator`: slow with article, fast with news (`Speech.paceManners`) |
+| `serious: true` | `narrator` with article or news (for the other roles serious is a manner) |
+| `hesitant: true` | `assistant` with every manner but serious |
 
 Sounds inside the text: `[laugh]`, `[sigh]`, `[pause]`, `[breath]`. Write numbers as words.
+
+## From 0.1
+
+Code written for 0.1 runs on 0.2 unchanged: the four roles of 0.1 with all their manners, the same parameter labels in
+the same order, the manner given or left out. The new parameters (`pace`, `serious`, `hesitant`) come after `pause`.
+What sounds different is the model: `assistant` speaks fluently now (`hesitant: true` is how it spoke in 0.1), and
+English words are read as written.
 
 ## Example app
 
@@ -81,7 +104,7 @@ Signing & Capabilities and run it on a phone.
 ## Performance
 
 On an iPhone 14 Pro Max (A16, iOS 27.0.1), with 2 threads, in the example app's Release build, the phone's thermal
-state "fair":
+state "fair" (measured with 0.1.2; Edge v2 has the same architecture):
 
 | | |
 |---|---|
@@ -99,10 +122,21 @@ state "fair":
 
 ## Tests
 
-`swift test` on a Mac runs everything, the model included: the random generator, the text front and the token ids on
-176 reference lines, the pieces of 75 reference texts, ONNX Runtime's telemetry switch, the lengths of the three
-lines above, and three lines, one line in `assistant` and `assistant_formal`, and a long text spoken to WAV files in the
-temporary folder.
+`swift test` on a Mac (or `xcodebuild test` in the iOS simulator) runs everything, the model included: the random
+generator; the symbols, the text front and the token ids of 368 reference lines; the pieces of 165 reference texts;
+the combinations that must throw; the 36 role and manner pairs of 0.1 and its call forms; ONNX Runtime's telemetry
+switch; and the reference lines (narrator, English words, three paces, hesitant, a dictated number), a long text and
+the two assistant roles spoken to WAV files in the temporary folder.
+
+## Model
+
+The model folder is `Sources/Gapiring/Model`. Another take of it, or of its graphs alone, under the same file names, goes
+in with one command; then run the tests:
+
+```sh
+python3 scripts/replace_model.py gapiring-edge-v2-model.zip --sha256 <hash>
+swift test
+```
 
 ## ONNX Runtime
 

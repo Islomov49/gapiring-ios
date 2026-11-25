@@ -8,8 +8,12 @@ import Foundation
 ///
 /// `play` returns at once and speaks on a background queue; `stream` and `speak` run on the calling thread. A text of
 /// any length is spoken piece by piece (`Speech.splitText`) with `pause` seconds of silence between the pieces.
+///
+/// The manner is optional (the narrator reads a book, every other role is neutral); `pace` ("slow", "fast"), `serious`
+/// and `hesitant` are optional marks, one at a time, for the roles and manners in `Speech.paceManners` and
+/// `Speech.tags`. A combination outside them throws before any audio is made. Code written for 0.1 runs unchanged.
 public final class Gapiring {
-    public static let version = "0.1.7"
+    public static let version = "0.2.0"
     public let sampleRate: Int
 
     private let engine: Engine
@@ -20,9 +24,12 @@ public final class Gapiring {
     private lazy var player = AVAudioPlayerNode()
     private var wired = false
 
+    /// The model folder inside the package (Sources/Gapiring/Model).
+    static var packagedModel: URL? { Bundle.module.url(forResource: "Model", withExtension: nil) }
+
     /// The model that ships inside the package.
     public convenience init(threads: Int = 2) throws {
-        guard let dir = Bundle.module.url(forResource: "Model", withExtension: nil) else {
+        guard let dir = Gapiring.packagedModel else {
             throw GapiringError.model("the Model folder is not in the package's resources")
         }
         try self.init(modelDirectory: dir, threads: threads)
@@ -37,38 +44,44 @@ public final class Gapiring {
     private var current: Int { lock.lock(); defer { lock.unlock() }; return generation }
 
     /// 24 kHz mono float chunks as they are made; return false from `onChunk` to stop the whole text. A longer text is
-    /// spoken piece by piece (`Speech.splitText`), each piece with the same `seed`, with `pause` seconds of silence
-    /// (zeros) between the pieces. Blocks: call off the main thread.
-    public func stream(_ text: String, voice: String = "f1", role: String = "assistant", manner: String = "neutral", seed: UInt32 = 1,
-                       pause: Double = 0.25, onChunk: ([Float]) -> Bool) throws {
+    /// spoken piece by piece (`Speech.splitText`; the narrator's pieces are up to 280 code points), each piece with the
+    /// same `seed`, with `pause` seconds of silence (zeros) between the pieces. Blocks: call off the main thread.
+    public func stream(_ text: String, voice: String = "f1", role: String = "assistant", manner: String? = nil, seed: UInt32 = 1,
+                       pause: Double = 0.25, pace: String? = nil, serious: Bool = false, hesitant: Bool = false,
+                       onChunk: ([Float]) -> Bool) throws {
+        let tags = try Speech.tags(role: role, manner: manner, pace: pace, serious: serious, hesitant: hesitant)
         let silence = [Float](repeating: 0, count: Int((max(pause, 0) * Double(sampleRate)).rounded()))
-        for (i, piece) in Speech.splitText(text).enumerated() {
+        for (i, piece) in Speech.pieces(text, role: role).enumerated() {
             if i > 0 && !silence.isEmpty && !onChunk(silence) { return }
-            guard try engine.stream(piece, voice: voice, role: role, manner: manner, seed: seed, onChunk: onChunk) else { return }
+            guard try engine.stream(piece, voice: voice, tags: tags, seed: seed, onChunk: onChunk) else { return }
         }
     }
 
     /// The whole text as one array. Blocks: call off the main thread.
-    public func speak(_ text: String, voice: String = "f1", role: String = "assistant", manner: String = "neutral", seed: UInt32 = 1,
-                      pause: Double = 0.25) throws -> [Float] {
+    public func speak(_ text: String, voice: String = "f1", role: String = "assistant", manner: String? = nil, seed: UInt32 = 1,
+                      pause: Double = 0.25, pace: String? = nil, serious: Bool = false, hesitant: Bool = false) throws -> [Float] {
         var out: [Float] = []
-        try stream(text, voice: voice, role: role, manner: manner, seed: seed, pause: pause) { out += $0; return true }
+        try stream(text, voice: voice, role: role, manner: manner, seed: seed, pause: pause, pace: pace, serious: serious,
+                   hesitant: hesitant) { out += $0; return true }
         return out
     }
 
     /// The token ids the model reads for a line (one piece of `Speech.splitText`).
-    public func tokens(_ text: String, role: String = "assistant", manner: String = "neutral") throws -> [Int] {
-        try engine.tokens(text, role: role, manner: manner)
+    public func tokens(_ text: String, role: String = "assistant", manner: String? = nil, pace: String? = nil,
+                       serious: Bool = false, hesitant: Bool = false) throws -> [Int] {
+        engine.tokens(text, tags: try Speech.tags(role: role, manner: manner, pace: pace, serious: serious, hesitant: hesitant))
     }
 
     /// Speaks the text through the device's audio output as it is made. A new call waits for the text before it;
     /// `stop()` drops what is playing and what waits. `completion` gets the error, if any, on the background queue.
-    public func play(_ text: String, voice: String = "f1", role: String = "assistant", manner: String = "neutral", seed: UInt32 = 1,
-                     pause: Double = 0.25, completion: ((Error?) -> Void)? = nil) {
+    public func play(_ text: String, voice: String = "f1", role: String = "assistant", manner: String? = nil, seed: UInt32 = 1,
+                     pause: Double = 0.25, pace: String? = nil, serious: Bool = false, hesitant: Bool = false,
+                     completion: ((Error?) -> Void)? = nil) {
         let mine = current
         queue.async { [self] in
             guard mine == current else { completion?(nil); return }
             do {
+                _ = try Speech.tags(role: role, manner: manner, pace: pace, serious: serious, hesitant: hesitant)   // before the audio session
                 let format = AVAudioFormat(standardFormatWithSampleRate: Double(sampleRate), channels: 1)!
                 if !wired {
                     #if os(iOS)
@@ -82,7 +95,8 @@ public final class Gapiring {
                 if !audio.isRunning { try audio.start() }
                 player.play()
                 let done = DispatchGroup()
-                try stream(text, voice: voice, role: role, manner: manner, seed: seed, pause: pause) { chunk in
+                try stream(text, voice: voice, role: role, manner: manner, seed: seed, pause: pause, pace: pace, serious: serious,
+                           hesitant: hesitant) { chunk in
                     guard mine == current, let buffer = AVAudioPCMBuffer(pcmFormat: format, frameCapacity: AVAudioFrameCount(chunk.count)) else { return false }
                     buffer.frameLength = AVAudioFrameCount(chunk.count)
                     chunk.withUnsafeBufferPointer { buffer.floatChannelData![0].update(from: $0.baseAddress!, count: chunk.count) }

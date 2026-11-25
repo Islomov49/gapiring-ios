@@ -1,24 +1,42 @@
 import Foundation
 
-/// Roles and manners by name, and the text front: punctuation, sound tags, the role and manner in front of the text.
+/// Roles, manners and marks by name, and the text front: punctuation, sound tags, the role, the manner and the mark in
+/// front of the text (text-contract v2, Gapiring Edge v2).
 public enum Speech {
-    public static let roles: [String: String] = ["operator": "\u{2460}", "assistant": "\u{2462}", "assistant_formal": "\u{2463}",
-                                                 "emotional": "\u{2461}"]
+    /// The first symbol before the text.
+    public static let roles: [String: String] = ["operator": "\u{2460}", "emotional": "\u{2461}", "assistant": "\u{2462}",
+                                                 "assistant_formal": "\u{2463}", "narrator": "\u{247A}"]
+    /// The second symbol; the narrator's manner is its genre (book, article, news, tale).
     static let manners: [String: String] = [
         "calm": "\u{2464}", "neutral": "\u{2472}", "warm": "\u{2473}", "cheerful": "\u{2474}", "empathetic": "\u{2475}",
         "dictation": "\u{2476}", "persuasive": "\u{2477}", "brisk": "\u{2478}", "soothing": "\u{2479}", "angry": "\u{246c}",
         "upset": "\u{246e}", "irritated": "\u{246b}", "worried": "\u{246d}", "tired": "\u{2470}", "sceptical": "\u{246f}",
         "confused": "\u{2469}", "hurried": "\u{246a}", "joking": "\u{2466}", "grateful": "\u{2467}", "curious": "\u{2468}",
         "friendly": "\u{2465}", "elderly": "\u{2471}",
+        "serious": "\u{247B}", "book": "\u{247C}", "article": "\u{247D}", "news": "\u{247E}", "tale": "\u{247F}",
     ]
     /// The manners each role speaks in: roleManners["emotional"] = angry, upset, ...
     public static let roleManners: [String: [String]] = [
-        "operator": ["neutral", "warm", "cheerful", "empathetic", "calm", "dictation", "persuasive", "brisk"],
-        "assistant": ["neutral", "warm", "cheerful", "empathetic", "calm", "dictation", "soothing"],
-        "assistant_formal": ["neutral", "warm", "cheerful", "empathetic", "calm", "dictation", "soothing"],
+        "operator": ["neutral", "warm", "cheerful", "empathetic", "calm", "dictation", "persuasive", "brisk", "serious"],
+        "assistant": ["neutral", "warm", "cheerful", "empathetic", "calm", "dictation", "soothing", "serious"],
+        "assistant_formal": ["neutral", "warm", "cheerful", "empathetic", "calm", "dictation", "soothing", "serious"],
+        "narrator": ["book", "article", "news", "tale"],
         "emotional": ["angry", "upset", "irritated", "worried", "tired", "sceptical", "confused", "hurried", "joking",
                       "grateful", "curious", "friendly", "calm", "elderly"],
     ]
+    /// The manners each role takes `pace` with. The narrator: "slow" with article only, "fast" with news only.
+    public static let paceManners: [String: [String]] = [
+        "operator": ["neutral", "warm", "cheerful", "calm", "persuasive"],
+        "assistant": ["neutral", "warm", "cheerful", "calm"],
+        "assistant_formal": ["neutral", "warm", "cheerful", "calm"],
+        "narrator": ["article", "news"],
+    ]
+    /// The narrator's genres that take `serious`; `hesitant` is the role assistant's, with these manners.
+    static let seriousManners = ["article", "news"]
+    static let hesitantManners = ["neutral", "warm", "cheerful", "empathetic", "calm", "dictation", "soothing"]
+    /// The third symbol, at most one: pace slow / fast, serious, hesitant.
+    private static let paces = ["slow": "\u{2480}", "fast": "\u{2481}"]
+    private static let seriousMark = "\u{247B}", hesitantMark = "\u{2482}"
     public static let voices = ["f1", "m1"]
 
     private static let events: [(String, String)] = [("laugh", "§"), ("pause", "¦"), ("breath", "¶"), ("sigh", "¤")]
@@ -28,9 +46,39 @@ public enum Speech {
         "\u{02BB}": "'", "\u{02BC}": "'", "\u{2018}": "'", "\u{2019}": "'", "\u{2032}": "'", "\u{02B9}": "'", "\u{0060}": "'",
     ]
 
-    public static func tags(role: String, manner: String) throws -> String {
+    /// The manner a role speaks in when none is given: the narrator reads a book, every other role is neutral.
+    public static func defaultManner(role: String) -> String { role == "narrator" ? "book" : "neutral" }
+
+    /// The symbols in front of the text: role, manner, then at most one mark. A combination outside text-contract v2
+    /// throws.
+    public static func tags(role: String, manner: String? = nil, pace: String? = nil, serious: Bool = false,
+                            hesitant: Bool = false) throws -> String {
+        let manner = manner ?? defaultManner(role: role)
         guard let r = roles[role], let m = manners[manner], roleManners[role]?.contains(manner) == true else {
             throw GapiringError.unknown("role/manner \(role)/\(manner): see Speech.roleManners")
+        }
+        if [pace != nil, serious, hesitant].filter({ $0 }).count > 1 {
+            throw GapiringError.unknown("pace, serious and hesitant: one at a time")
+        }
+        if let pace {
+            guard let p = paces[pace] else { throw GapiringError.unknown("pace \(pace): slow or fast") }
+            let genre = role != "narrator" || (pace == "slow" ? manner == "article" : manner == "news")
+            guard paceManners[role]?.contains(manner) == true, genre else {
+                throw GapiringError.unknown("pace \(pace) with \(role)/\(manner): see Speech.paceManners")
+            }
+            return r + m + p
+        }
+        if serious {
+            guard role == "narrator", seriousManners.contains(manner) else {
+                throw GapiringError.unknown("serious with \(role)/\(manner): the narrator's article or news only")
+            }
+            return r + m + seriousMark
+        }
+        if hesitant {
+            guard role == "assistant", hesitantManners.contains(manner) else {
+                throw GapiringError.unknown("hesitant with \(role)/\(manner): the role assistant only, not serious")
+            }
+            return r + m + hesitantMark
         }
         return r + m
     }
@@ -55,8 +103,13 @@ public enum Speech {
     }
 
     /// The text the tokenizer gets: the text front, closed with a full stop when it has no closing mark.
-    public static func full(_ text: String, role: String, manner: String) throws -> String {
-        let t = pocketText(text, tags: try tags(role: role, manner: manner))
+    public static func full(_ text: String, role: String, manner: String? = nil, pace: String? = nil, serious: Bool = false,
+                            hesitant: Bool = false) throws -> String {
+        full(text, tags: try tags(role: role, manner: manner, pace: pace, serious: serious, hesitant: hesitant))
+    }
+
+    static func full(_ text: String, tags: String) -> String {
+        let t = pocketText(text, tags: tags)
         if let last = t.unicodeScalars.last, ".!?…".unicodeScalars.contains(last) { return t }
         return t + "."
     }
@@ -95,8 +148,14 @@ public enum Speech {
         return out
     }
 
-    /// The pieces `stream`, `speak` and `play` speak a text in: sentences joined while they fit in `limit` code points,
-    /// a sentence longer than `hard` cut at its commas, colons and dashes. A text of at most `limit` is one piece.
+    /// The pieces a role speaks a text in: the narrator's are larger (280 / 340 code points), every other role's 150 / 240.
+    static func pieces(_ text: String, role: String) -> [String] {
+        role == "narrator" ? splitText(text, limit: 280, hard: 340) : splitText(text)
+    }
+
+    /// The pieces `stream`, `speak` and `play` speak a text in (the narrator with limit 280 and hard 340): sentences
+    /// joined while they fit in `limit` code points, a sentence longer than `hard` cut at its commas, colons and dashes.
+    /// A text of at most `limit` is one piece.
     public static func splitText(_ text: String, limit: Int = 150, hard: Int = 240) -> [String] {
         let text = trim(text)
         if size(text) <= limit { return text.isEmpty ? [] : [text] }
