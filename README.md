@@ -3,7 +3,7 @@
 Uzbek text-to-speech on the device. The Gapiring Edge v2 model ships inside the package: no network, no account, no key.
 
 The model, the other platforms (Python, JavaScript, Android) and audio examples:
-https://huggingface.co/islomov/gapi-uz-gapiring-v1
+https://huggingface.co/islomov/gapi-uz-gapiring-v2
 
 - iOS 15.1 or later, macOS 14 or later on Apple silicon
 - Swift 5.9 or later (tested with Xcode 26.5)
