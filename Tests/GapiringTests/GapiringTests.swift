@@ -123,6 +123,20 @@ final class GapiringTests: XCTestCase {
             XCTAssertThrowsError(try Speech.tags(role: role, manner: manner, pace: pace, serious: serious, hesitant: hesitant),
                                  "\(role)/\(manner ?? "-") pace \(pace ?? "-") serious \(serious) hesitant \(hesitant)")
         }
+        // paceManners has the shape of the other runtimes (role -> pace -> manners) and is what tags allows, no more.
+        XCTAssertEqual(Speech.paceManners["narrator"], ["slow": ["article"], "fast": ["news"]])
+        XCTAssertEqual(Speech.paceManners["operator"]?["slow"], ["neutral", "warm", "cheerful", "calm", "persuasive"])
+        XCTAssertEqual(Speech.paceManners["assistant"]?["fast"], ["neutral", "warm", "cheerful", "calm"])
+        XCTAssertEqual(Set(Speech.paceManners.keys), ["operator", "assistant", "assistant_formal", "narrator"])
+        for (role, manners) in Speech.roleManners {
+            for pace in ["slow", "fast"] {
+                for manner in manners {
+                    let allowed = Speech.paceManners[role]?[pace]?.contains(manner) == true
+                    let tags = try? Speech.tags(role: role, manner: manner, pace: pace)
+                    XCTAssertEqual(tags != nil, allowed, "\(role)/\(manner) pace \(pace)")
+                }
+            }
+        }
         let tts = try Gapiring()
         var chunks = 0
         XCTAssertThrowsError(try tts.stream("Salom.", role: "narrator", manner: "warm") { _ in chunks += 1; return true })

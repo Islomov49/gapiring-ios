@@ -24,12 +24,13 @@ public enum Speech {
         "emotional": ["angry", "upset", "irritated", "worried", "tired", "sceptical", "confused", "hurried", "joking",
                       "grateful", "curious", "friendly", "calm", "elderly"],
     ]
-    /// The manners each role takes `pace` with. The narrator: "slow" with article only, "fast" with news only.
-    public static let paceManners: [String: [String]] = [
-        "operator": ["neutral", "warm", "cheerful", "calm", "persuasive"],
-        "assistant": ["neutral", "warm", "cheerful", "calm"],
-        "assistant_formal": ["neutral", "warm", "cheerful", "calm"],
-        "narrator": ["article", "news"],
+    /// The manners each role takes each `pace` with: paceManners["narrator"] = ["slow": ["article"], "fast": ["news"]].
+    public static let paceManners: [String: [String: [String]]] = [
+        "operator": ["slow": ["neutral", "warm", "cheerful", "calm", "persuasive"],
+                     "fast": ["neutral", "warm", "cheerful", "calm", "persuasive"]],
+        "assistant": ["slow": ["neutral", "warm", "cheerful", "calm"], "fast": ["neutral", "warm", "cheerful", "calm"]],
+        "assistant_formal": ["slow": ["neutral", "warm", "cheerful", "calm"], "fast": ["neutral", "warm", "cheerful", "calm"]],
+        "narrator": ["slow": ["article"], "fast": ["news"]],
     ]
     /// The narrator's genres that take `serious`; `hesitant` is the role assistant's, with these manners.
     static let seriousManners = ["article", "news"]
@@ -62,8 +63,7 @@ public enum Speech {
         }
         if let pace {
             guard let p = paces[pace] else { throw GapiringError.unknown("pace \(pace): slow or fast") }
-            let genre = role != "narrator" || (pace == "slow" ? manner == "article" : manner == "news")
-            guard paceManners[role]?.contains(manner) == true, genre else {
+            guard paceManners[role]?[pace]?.contains(manner) == true else {
                 throw GapiringError.unknown("pace \(pace) with \(role)/\(manner): see Speech.paceManners")
             }
             return r + m + p
